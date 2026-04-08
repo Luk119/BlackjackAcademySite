@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --gold: #d4af37;
+    --gold-light: #f0cc5f;
+    --gold-dark: #a88a1c;
+    --felt: #1a4731;
+    --felt-dark: #0f2d1e;
+  }
+}
+
+@layer utilities {
+  .text-gold {
+    color: var(--gold);
+  }
+  .bg-gold {
+    background-color: var(--gold);
+  }
+  .border-gold {
+    border-color: var(--gold);
+  }
+  .text-gold-light {
+    color: var(--gold-light);
+  }
+  .bg-felt-dark {
+    background-color: var(--felt-dark);
+  }
+  .bg-felt {
+    background-color: var(--felt);
+  }
+  .shadow-gold {
+    --tw-shadow-color: var(--gold);
+  }
+}
+
+/* Card flip animation */
+.card-container {
+  perspective: 1000px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #111827;
+}
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+/* Felt texture */
+.felt-surface {
+  background-color: #1a4731;
+  background-image:
+    radial-gradient(ellipse at 50% 50%, rgba(26, 71, 49, 0.8) 0%, rgba(15, 45, 30, 1) 100%);
+}
+
+/* Gold shimmer effect */
+@keyframes goldShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.gold-shimmer {
+  background: linear-gradient(90deg, #a88a1c, #d4af37, #f0cc5f, #d4af37, #a88a1c);
+  background-size: 200% auto;
+  animation: goldShimmer 3s linear infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

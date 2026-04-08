@@ -1,0 +1,213 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  avatarUrl    String?
+  level        Int      @default(1)
+  xp           Int      @default(0)
+  chips        Int      @default(1000)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile      UserProfile?
+  sessions     GameSession[]
+  stats        UserStats?
+  achievements UserAchievement[]
+  lessonProgress LessonProgress[]
+  quizResults  QuizResult[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id               String  @id @default(uuid())
+  userId           String  @unique
+  bio              String?
+  preferredVariant String  @default("classic")
+  theme            String  @default("dark")
+  soundEnabled     Boolean @default(true)
+  hintsEnabled     Boolean @default(true)
+  countingSystem   String  @default("hi-lo")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserStats {
+  id                    String  @id @default(uuid())
+  userId                String  @unique
+  totalGames            Int     @default(0)
+  gamesWon              Int     @default(0)
+  gamesLost             Int     @default(0)
+  gamesPushed           Int     @default(0)
+  totalHandsPlayed      Int     @default(0)
+  correctDecisions      Int     @default(0)
+  incorrectDecisions    Int     @default(0)
+  blackjacksHit         Int     @default(0)
+  doublesWon            Int     @default(0)
+  splitsPlayed          Int     @default(0)
+  cardCountingAccuracy  Float   @default(0)
+  countingSessionsTotal Int     @default(0)
+  biggestWin            Int     @default(0)
+  totalChipsWon         Int     @default(0)
+  totalChipsLost        Int     @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_stats")
+}
+
+model GameSession {
+  id          String      @id @default(uuid())
+  userId      String
+  variant     String      @default("classic")
+  deckCount   Int         @default(6)
+  startedAt   DateTime    @default(now())
+  endedAt     DateTime?
+  handsPlayed Int         @default(0)
+  chipsStart  Int
+  chipsEnd    Int?
+  isTraining  Boolean     @default(false)
+  mode        String      @default("practice") // practice | competitive | counting
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hands GameHand[]
+
+  @@map("game_sessions")
+}
+
+model GameHand {
+  id               String   @id @default(uuid())
+  sessionId        String
+  playerCards      Json
+  dealerCards      Json
+  playerTotal      Int
+  dealerTotal      Int
+  result           String   // win | loss | push | blackjack | surrender
+  betAmount        Int
+  playerAction     String   // sequence of actions
+  optimalAction    String?  // what basic strategy says
+  wasOptimal       Boolean?
+  runningCount     Int?
+  trueCount        Float?
+  countWasCorrect  Boolean?
+  playedAt         DateTime @default(now())
+
+  session GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("game_hands")
+}
+
+model Lesson {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  description String
+  content     Json     // Rich content blocks
+  order       Int
+  level       Int      @default(1) // 1=beginner, 2=intermediate, 3=advanced
+  category    String   // basics | strategy | counting | advanced
+  xpReward    Int      @default(50)
+  duration    Int      // minutes
+  prerequisites String[] @default([])
+  createdAt   DateTime @default(now())
+
+  progress LessonProgress[]
+  quizzes  Quiz[]
+
+  @@map("lessons")
+}
+
+model LessonProgress {
+  id          String    @id @default(uuid())
+  userId      String
+  lessonId    String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  attempts    Int       @default(0)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@map("lesson_progress")
+}
+
+model Quiz {
+  id       String         @id @default(uuid())
+  lessonId String
+  title    String
+  questions Json          // Array of questions with options
+
+  lesson  Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  results QuizResult[]
+
+  @@map("quizzes")
+}
+
+model QuizResult {
+  id         String   @id @default(uuid())
+  userId     String
+  quizId     String
+  score      Int
+  maxScore   Int
+  answers    Json
+  completedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_results")
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String
+  icon        String
+  xpReward    Int      @default(100)
+  condition   Json     // { type, threshold, metric }
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(uuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
